@@ -2,6 +2,8 @@
 
 LOG_DIR=$HOME/mysql-log-backup/ln09-logs
 
+cd $LOG_DIR
+
 LOGIN_PATH=logShipper
 
 MYSQL_HOST=192.168.0.15
