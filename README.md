@@ -1,6 +1,16 @@
-MySQL Binary Log Backup
+# MySQL Binary Log Backup
 
-Backup Setup
+## Backup Setup
+
+## Create Regular backups from MySQL
+
+In order not to embed passwords in the system use the mysql_config_editor to create a login-path
+
+```
+5 */6 * * * /usr/bin/mysqldump --login-path=wmsBackupAlias --single-transaction --flush-logs --master-data=2 --opt pallets | gzip -c > /u1/backup/palletsdb/pallets-`date '+\%Y\%m\%d\%H\%M'`.sql.gz
+```
+
+## Using MYSQLBINLOG to do real-time log backups
 
 The objective is to ship in real-time the BINARY LOGS from MYSQL_SERVER to BACKUP_SERVER so in the event of losing MYSQL_SERVER you can recover to the last successful transaction
 
