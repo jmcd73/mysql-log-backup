@@ -2,12 +2,28 @@
 
 ## Backup Setup
 
-## Create Regular backups from MySQL
+## Create Login Path 
+You need mysql server not mariadb to use the `mysql_config_editor`
 
 In order not to embed passwords in the system use the mysql_config_editor to create a login-path
 
+
+## On the MYSQL Server
+
+## Add a backup user and create a login-path so you can reference the credentials in the crontab
+
 ```
-5 */6 * * * /usr/bin/mysqldump --login-path=wmsBackupAlias --single-transaction --flush-logs --master-data=2 --opt pallets | gzip -c > /u1/backup/palletsdb/pallets-`date '+\%Y\%m\%d\%H\%M'`.sql.gz
+mysql_config_editor set --login-path=BACKUP_USER_LPATH --host=10.11.12.13 --user=backupUser --password
+
+```
+
+## Create Regular backups from MySQL
+
+Create an automated backup with crontab
+
+```
+# m h 
+5 */6 * * * /usr/bin/mysqldump --login-path=BACKUP_USER_LPATH --single-transaction --flush-logs --master-data=2 --opt palletsdb | gzip -c > /u1/backup/palletsdb/palletsdb-`date '+\%Y\%m\%d\%H\%M'`.sql.gz
 ```
 
 ## Using MYSQLBINLOG to do real-time log backups
@@ -20,15 +36,19 @@ The BACKUP_SERVER would ideally be:
 
 - Not on the same disk array as your MYSQL_SERVER so after a total hardware failure you still have the logs and DB backups
 
+## Check both the MYSQL_SERVER and BACKUP_SERVER have the same version of MySQL
+
 On the BACKUP_SERVER install the same version of MySQL you have on the MYSQL_SERVER
 
 ```
 mysql --version
 mysql  Ver 14.14 Distrib 5.7.29, for Linux (x86_64) using  EditLine wrapper
+# they should both be 5.x or 8.x 
 ```
 
 ```
-git clone <this repo>
+git clone https://github.com/jmcd73/mysql-log-backup
+
 ```
 
 Add a MySQL User Account on the MYSQL_SERVER so the backup script on BACKUP_SERVER can login
@@ -36,29 +56,40 @@ Add a MySQL User Account on the MYSQL_SERVER so the backup script on BACKUP_SERV
 https://dev.mysql.com/doc/refman/8.0/en/replication-howto-repuser.html
 
 ```
-mysql> CREATE USER 'replication'@'%.example.com' IDENTIFIED BY 'password';
-mysql> GRANT REPLICATION SLAVE ON *.* TO 'replication'@'%.example.com';
+mysql> CREATE USER 'binLogShipper'@'%' IDENTIFIED BY 'MyComplexPassword';
+mysql> GRANT REPLICATION SLAVE ON *.* TO 'binLogShipper'@'%';
+mysql> GRANT REPLICATION USER ON *.* TO 'binLogShipper'@'%';
+
 ```
 
-Check the values of the `~/.mylogin.cnf` files
+
+
+```
+mysql_config_editor set --login-path BINLOG_SHIPPER_LPATH --user=replication --host=10.11.12.13 --password
+
+```
+
+To check the values of the `~/.mylogin.cnf` file
 
 ```
 mysql_config_editor  print --all=true
-```
 
-Add the account details to `~/.mylogin.cnf`
+[BINLOG_SHIPPER_LPATH]
+user = binlogShipper
+password = *****
+host = 10.11.12.13
 
-```
-mysql_config_editor set --login-path BINLOG_SHIPPER --user 'replication'@'apf-ma-ln06.apfoods.local' -p --host 192.168.0.15
 ```
 
 Use the value you specify for `--login-path` in the mysql-log-backup.sh script
 
 ```sh
-LOGIN_PATH=BINLOG_SHIPPER
+# ...
+LOGIN_PATH=BINLOG_SHIPPER_LPATH
+# ...
 ```
 
-Install supervisor on the BACKUP_SERVER and copy the supervisor conf file to the right directory
+## Install supervisor on the BACKUP_SERVER and copy the supervisor conf file to the right directory
 
 ```
 apt-get install supervisor
