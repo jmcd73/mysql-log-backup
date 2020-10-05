@@ -30,7 +30,7 @@ Create an automated backup with crontab
 
 The objective is to ship in real-time the BINARY LOGS from MYSQL_SERVER to BACKUP_SERVER so in the event of losing MYSQL_SERVER you can recover to the last successful transaction
 
-MYSQL_SERVER <====> BACKUP_SERVER
+MYSQL_SERVER ====> BACKUP_SERVER
 
 The BACKUP_SERVER would ideally be:
 
@@ -65,7 +65,7 @@ mysql> GRANT REPLICATION USER ON *.* TO 'binLogShipper'@'%';
 
 
 ```
-mysql_config_editor set --login-path BINLOG_SHIPPER_LPATH --user=replication --host=10.11.12.13 --password
+mysql_config_editor set --login-path BINLOG_SHIPPER_LPATH --user=binLogShipper --host=10.11.12.13 --password
 
 ```
 
